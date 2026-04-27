@@ -82,6 +82,11 @@ export default function Index() {
   const [comments, setComments] = useState(INITIAL_COMMENTS);
   const [newComment, setNewComment] = useState({ name: "", text: "" });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeDish, setActiveDish] = useState<number | null>(null);
+  const [activeRecipe, setActiveRecipe] = useState<number | null>(null);
+  const [activeGallery, setActiveGallery] = useState<number | null>(null);
+  const [allRecipesOpen, setAllRecipesOpen] = useState(false);
+  const [contactSent, setContactSent] = useState(false);
 
   const scrollTo = (id: string, label: string) => {
     setActiveSection(label);
@@ -222,9 +227,10 @@ export default function Index() {
               <div
                 key={dish.id}
                 className="rounded-2xl overflow-hidden cursor-pointer group transition-all duration-300"
-                style={{ backgroundColor: "#1a100a", boxShadow: "0 0 0 1px rgba(249,115,22,0.1)" }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 1px rgba(249,115,22,0.35), 0 16px 48px rgba(249,115,22,0.15)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 1px rgba(249,115,22,0.1)"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
+                style={{ backgroundColor: "#1a100a", boxShadow: activeDish === dish.id ? "0 0 0 1px rgba(249,115,22,0.5), 0 16px 48px rgba(249,115,22,0.2)" : "0 0 0 1px rgba(249,115,22,0.1)" }}
+                onClick={() => setActiveDish(activeDish === dish.id ? null : dish.id)}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
               >
                 <div className={`bg-gradient-to-br ${dish.color} h-40 flex items-center justify-center relative overflow-hidden`}>
                   <span className="text-7xl group-hover:scale-110 transition-transform duration-300">{dish.emoji}</span>
@@ -245,6 +251,14 @@ export default function Index() {
                       <span>{dish.level}</span>
                     </div>
                   </div>
+                  {activeDish === dish.id && (
+                    <div className="mt-3 pt-3 border-t border-white/10 text-sm text-white/60 animate-fade-in">
+                      Хотите узнать рецепт? Переходите в раздел{" "}
+                      <button className="text-orange-400 underline" onClick={(e) => { e.stopPropagation(); scrollTo("recipes", "Рецепты"); }}>
+                        Рецепты
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -268,10 +282,9 @@ export default function Index() {
             {RECIPES.map((recipe) => (
               <div
                 key={recipe.id}
-                className="rounded-2xl p-6 md:p-8 flex flex-col md:flex-row gap-6 items-start cursor-pointer group transition-all duration-300 border border-white/5"
-                style={{ backgroundColor: "#1a100a" }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(249,115,22,0.3)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.05)"; }}
+                className="rounded-2xl p-6 md:p-8 flex flex-col md:flex-row gap-6 items-start cursor-pointer group transition-all duration-300 border"
+                style={{ backgroundColor: "#1a100a", borderColor: activeRecipe === recipe.id ? "rgba(249,115,22,0.4)" : "rgba(255,255,255,0.05)" }}
+                onClick={() => setActiveRecipe(activeRecipe === recipe.id ? null : recipe.id)}
               >
                 <div className="flex-shrink-0 w-20 h-20 rounded-2xl flex items-center justify-center text-5xl" style={{ backgroundColor: "#231610" }}>
                   {recipe.emoji}
@@ -296,6 +309,18 @@ export default function Index() {
                       <span>{recipe.steps} шагов</span>
                     </div>
                   </div>
+                  {activeRecipe === recipe.id && (
+                    <div className="mt-4 pt-4 border-t border-white/10 animate-fade-in">
+                      <p className="text-orange-400 text-sm font-medium mb-2">Хотите приготовить это блюдо?</p>
+                      <button
+                        className="text-white text-sm font-heading font-semibold px-5 py-2 rounded-full transition-all hover:opacity-90"
+                        style={{ background: "linear-gradient(135deg, #f97316, #e11d48)" }}
+                        onClick={(e) => { e.stopPropagation(); scrollTo("contacts", "Контакты"); }}
+                      >
+                        Записаться на мастер-класс →
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-shrink-0 hidden md:flex">
                   <div className="w-10 h-10 rounded-full border flex items-center justify-center transition-all group-hover:bg-orange-500/10" style={{ borderColor: "rgba(249,115,22,0.3)" }}>
@@ -307,10 +332,40 @@ export default function Index() {
           </div>
 
           <div className="mt-10 text-center">
-            <button className="border text-orange-400 font-heading font-medium px-8 py-3 rounded-full tracking-wide transition-all hover:bg-orange-500/10" style={{ borderColor: "rgba(249,115,22,0.3)" }}>
+            <button
+              className="border text-orange-400 font-heading font-medium px-8 py-3 rounded-full tracking-wide transition-all hover:bg-orange-500/10"
+              style={{ borderColor: "rgba(249,115,22,0.3)" }}
+              onClick={() => setAllRecipesOpen(true)}
+            >
               Все рецепты →
             </button>
           </div>
+
+          {allRecipesOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)" }} onClick={() => setAllRecipesOpen(false)}>
+              <div className="rounded-3xl p-8 max-w-md w-full text-center" style={{ backgroundColor: "#1a100a", border: "1px solid rgba(249,115,22,0.3)" }} onClick={(e) => e.stopPropagation()}>
+                <span className="text-5xl mb-4 block">📖</span>
+                <h3 className="font-heading text-2xl font-bold text-white mb-3">Скоро!</h3>
+                <p className="text-white/50 mb-6">Полный каталог рецептов находится в разработке. Подпишитесь — мы сообщим о запуске.</p>
+                <div className="flex gap-3">
+                  <button
+                    className="flex-1 text-white font-heading font-semibold py-3 rounded-full transition-all hover:opacity-90"
+                    style={{ background: "linear-gradient(135deg, #f97316, #e11d48)" }}
+                    onClick={() => { setAllRecipesOpen(false); scrollTo("contacts", "Контакты"); }}
+                  >
+                    Написать нам
+                  </button>
+                  <button
+                    className="px-5 py-3 rounded-full border text-white/50 hover:text-white transition-colors"
+                    style={{ borderColor: "rgba(255,255,255,0.1)" }}
+                    onClick={() => setAllRecipesOpen(false)}
+                  >
+                    Закрыть
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -340,10 +395,17 @@ export default function Index() {
             {GALLERY_ITEMS.map((item) => (
               <div
                 key={item.id}
-                className={`bg-gradient-to-br ${item.bg} rounded-2xl h-28 md:h-36 flex flex-col items-center justify-center gap-2 cursor-pointer group hover:scale-105 transition-transform duration-300`}
+                className={`bg-gradient-to-br ${item.bg} rounded-2xl h-28 md:h-36 flex flex-col items-center justify-center gap-2 cursor-pointer group transition-all duration-300 relative overflow-hidden`}
+                style={{ transform: activeGallery === item.id ? "scale(1.08)" : "scale(1)", boxShadow: activeGallery === item.id ? "0 8px 32px rgba(0,0,0,0.4)" : "none" }}
+                onClick={() => setActiveGallery(activeGallery === item.id ? null : item.id)}
               >
                 <span className="text-4xl group-hover:scale-110 transition-transform duration-200">{item.emoji}</span>
                 <span className="text-white text-xs font-medium tracking-wide uppercase opacity-80">{item.label}</span>
+                {activeGallery === item.id && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-2xl" style={{ backgroundColor: "rgba(0,0,0,0.45)" }}>
+                    <span className="text-white text-xs font-heading font-semibold tracking-wide px-3 text-center">Смотреть подборку</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -434,32 +496,42 @@ export default function Index() {
                 Есть идея для рецепта, предложение о сотрудничестве или просто хотите поговорить о еде?
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-3xl mx-auto mb-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-xl mx-auto mb-10">
                 {[
-                  { icon: "Mail", label: "Email", value: "hello@kukhnya.ru" },
-                  { icon: "Phone", label: "Телефон", value: "+7 (999) 123-45-67" },
-                  { icon: "MapPin", label: "Адрес", value: "Москва, Россия" },
+                  { icon: "Mail", label: "Email", value: "hello@kukhnya.ru", href: "mailto:hello@kukhnya.ru" },
+                  { icon: "MapPin", label: "Адрес", value: "Казань, Россия", href: "https://maps.yandex.ru/?text=Казань" },
                 ].map((c) => (
-                  <div
+                  <a
                     key={c.label}
-                    className="rounded-2xl p-5 text-center border transition-colors"
-                    style={{ backgroundColor: "#231610", borderColor: "rgba(255,255,255,0.05)" }}
+                    href={c.href}
+                    target={c.href.startsWith("http") ? "_blank" : undefined}
+                    rel="noopener noreferrer"
+                    className="rounded-2xl p-5 text-center border transition-colors block hover:cursor-pointer"
+                    style={{ backgroundColor: "#231610", borderColor: "rgba(255,255,255,0.05)", textDecoration: "none" }}
                     onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(249,115,22,0.3)"; }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.05)"; }}
                   >
-                    <Icon name={c.icon as "Mail" | "Phone" | "MapPin"} size={22} className="text-orange-400 mx-auto mb-3" />
+                    <Icon name={c.icon as "Mail" | "MapPin"} size={22} className="text-orange-400 mx-auto mb-3" />
                     <div className="text-xs text-white/30 uppercase tracking-widest mb-1">{c.label}</div>
                     <div className="text-white text-sm font-medium">{c.value}</div>
-                  </div>
+                  </a>
                 ))}
               </div>
 
-              <button
-                className="text-white font-heading font-semibold px-10 py-4 rounded-full text-lg tracking-wide hover:opacity-90 transition-all hover:scale-105"
-                style={{ background: "linear-gradient(135deg, #f97316 0%, #e11d48 100%)", boxShadow: "0 8px 32px rgba(249,115,22,0.35)" }}
-              >
-                Написать нам
-              </button>
+              {contactSent ? (
+                <div className="inline-flex items-center gap-2 px-8 py-4 rounded-full border border-green-500/40 bg-green-500/10 text-green-400 font-heading font-semibold animate-fade-in">
+                  <Icon name="CheckCircle" size={20} />
+                  Отлично! Мы скоро свяжемся
+                </div>
+              ) : (
+                <button
+                  className="text-white font-heading font-semibold px-10 py-4 rounded-full text-lg tracking-wide hover:opacity-90 transition-all hover:scale-105"
+                  style={{ background: "linear-gradient(135deg, #f97316 0%, #e11d48 100%)", boxShadow: "0 8px 32px rgba(249,115,22,0.35)" }}
+                  onClick={() => { window.location.href = "mailto:hello@kukhnya.ru?subject=Запрос с сайта Кухня"; setContactSent(true); setTimeout(() => setContactSent(false), 5000); }}
+                >
+                  Написать нам
+                </button>
+              )}
             </div>
           </div>
         </div>
