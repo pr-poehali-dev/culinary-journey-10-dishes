@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
+import RecipePage from "./RecipePage";
 
 const HERO_IMG = "https://cdn.poehali.dev/projects/b79f1559-19eb-419f-8b70-ac3f8f6dc7b2/files/af3ec1a4-e817-4a33-ad5e-4debb2b9c6b5.jpg";
 const GALLERY_IMG = "https://cdn.poehali.dev/projects/b79f1559-19eb-419f-8b70-ac3f8f6dc7b2/files/e46ecee1-4e28-41cf-92a4-d9aaca105a4e.jpg";
@@ -86,7 +87,32 @@ export default function Index() {
   const [activeRecipe, setActiveRecipe] = useState<number | null>(null);
   const [activeGallery, setActiveGallery] = useState<number | null>(null);
   const [allRecipesOpen, setAllRecipesOpen] = useState(false);
-  const [contactSent, setContactSent] = useState(false);
+  const [openDishRecipe, setOpenDishRecipe] = useState<number | null>(null);
+
+  // Contact form
+  const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
+  const [contactStatus, setContactStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+
+  const sendContact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactForm.name.trim() || !contactForm.message.trim()) return;
+    setContactStatus("sending");
+    try {
+      const res = await fetch("https://functions.poehali.dev/15b42c1b-c5b7-4f67-904d-e74591e05609", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(contactForm),
+      });
+      if (res.ok) {
+        setContactStatus("sent");
+        setContactForm({ name: "", email: "", message: "" });
+      } else {
+        setContactStatus("error");
+      }
+    } catch {
+      setContactStatus("error");
+    }
+  };
 
   const scrollTo = (id: string, label: string) => {
     setActiveSection(label);
@@ -109,6 +135,10 @@ export default function Index() {
     ]);
     setNewComment({ name: "", text: "" });
   };
+
+  if (openDishRecipe !== null) {
+    return <RecipePage dishId={openDishRecipe} onBack={() => setOpenDishRecipe(null)} />;
+  }
 
   return (
     <div className="min-h-screen font-body" style={{ backgroundColor: "#100b07" }}>
@@ -241,7 +271,7 @@ export default function Index() {
                 </div>
                 <div className="p-5">
                   <h3 className="font-heading text-xl font-semibold text-white mb-3 group-hover:text-orange-400 transition-colors">{dish.name}</h3>
-                  <div className="flex items-center justify-between text-sm text-white/40">
+                  <div className="flex items-center justify-between text-sm text-white/40 mb-4">
                     <div className="flex items-center gap-1.5">
                       <Icon name="Clock" size={14} className="text-orange-500/70" />
                       <span>{dish.time}</span>
@@ -251,14 +281,13 @@ export default function Index() {
                       <span>{dish.level}</span>
                     </div>
                   </div>
-                  {activeDish === dish.id && (
-                    <div className="mt-3 pt-3 border-t border-white/10 text-sm text-white/60 animate-fade-in">
-                      Хотите узнать рецепт? Переходите в раздел{" "}
-                      <button className="text-orange-400 underline" onClick={(e) => { e.stopPropagation(); scrollTo("recipes", "Рецепты"); }}>
-                        Рецепты
-                      </button>
-                    </div>
-                  )}
+                  <button
+                    className="w-full py-2 rounded-xl text-sm font-heading font-semibold text-white transition-all hover:opacity-90"
+                    style={{ background: "linear-gradient(135deg, #f97316, #e11d48)" }}
+                    onClick={(e) => { e.stopPropagation(); setOpenDishRecipe(dish.id); }}
+                  >
+                    Смотреть рецепт →
+                  </button>
                 </div>
               </div>
             ))}
@@ -496,7 +525,8 @@ export default function Index() {
                 Есть идея для рецепта, предложение о сотрудничестве или просто хотите поговорить о еде?
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-xl mx-auto mb-10">
+              {/* Info tiles */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-xl mx-auto mb-10">
                 {[
                   { icon: "Mail", label: "Email", value: "hello@kukhnya.ru", href: "mailto:hello@kukhnya.ru" },
                   { icon: "MapPin", label: "Адрес", value: "Казань, Россия", href: "https://maps.yandex.ru/?text=Казань" },
@@ -506,32 +536,87 @@ export default function Index() {
                     href={c.href}
                     target={c.href.startsWith("http") ? "_blank" : undefined}
                     rel="noopener noreferrer"
-                    className="rounded-2xl p-5 text-center border transition-colors block hover:cursor-pointer"
+                    className="rounded-2xl p-4 text-center border transition-colors block"
                     style={{ backgroundColor: "#231610", borderColor: "rgba(255,255,255,0.05)", textDecoration: "none" }}
                     onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(249,115,22,0.3)"; }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.05)"; }}
                   >
-                    <Icon name={c.icon as "Mail" | "MapPin"} size={22} className="text-orange-400 mx-auto mb-3" />
+                    <Icon name={c.icon as "Mail" | "MapPin"} size={20} className="text-orange-400 mx-auto mb-2" />
                     <div className="text-xs text-white/30 uppercase tracking-widest mb-1">{c.label}</div>
                     <div className="text-white text-sm font-medium">{c.value}</div>
                   </a>
                 ))}
               </div>
 
-              {contactSent ? (
-                <div className="inline-flex items-center gap-2 px-8 py-4 rounded-full border border-green-500/40 bg-green-500/10 text-green-400 font-heading font-semibold animate-fade-in">
-                  <Icon name="CheckCircle" size={20} />
-                  Отлично! Мы скоро свяжемся
+              {/* Real contact form */}
+              <form onSubmit={sendContact} className="max-w-xl mx-auto text-left space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <input
+                    type="text"
+                    placeholder="Ваше имя *"
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                    required
+                    className="w-full px-4 py-3 rounded-xl text-white placeholder-white/30 text-sm outline-none border transition-colors"
+                    style={{ backgroundColor: "#231610", borderColor: "rgba(255,255,255,0.1)" }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = "#f97316"; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Ваш email"
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl text-white placeholder-white/30 text-sm outline-none border transition-colors"
+                    style={{ backgroundColor: "#231610", borderColor: "rgba(255,255,255,0.1)" }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = "#f97316"; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
+                  />
                 </div>
-              ) : (
-                <button
-                  className="text-white font-heading font-semibold px-10 py-4 rounded-full text-lg tracking-wide hover:opacity-90 transition-all hover:scale-105"
-                  style={{ background: "linear-gradient(135deg, #f97316 0%, #e11d48 100%)", boxShadow: "0 8px 32px rgba(249,115,22,0.35)" }}
-                  onClick={() => { window.location.href = "mailto:hello@kukhnya.ru?subject=Запрос с сайта Кухня"; setContactSent(true); setTimeout(() => setContactSent(false), 5000); }}
-                >
-                  Написать нам
-                </button>
-              )}
+                <textarea
+                  placeholder="Ваше сообщение *"
+                  value={contactForm.message}
+                  onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                  required
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl text-white placeholder-white/30 text-sm outline-none border transition-colors resize-none"
+                  style={{ backgroundColor: "#231610", borderColor: "rgba(255,255,255,0.1)" }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = "#f97316"; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
+                />
+                {contactStatus === "sent" ? (
+                  <div className="flex items-center justify-center gap-2 py-3 rounded-full border border-green-500/40 bg-green-500/10 text-green-400 font-heading font-semibold text-sm animate-fade-in">
+                    <Icon name="CheckCircle" size={18} />
+                    Сообщение отправлено! Мы скоро свяжемся
+                  </div>
+                ) : contactStatus === "error" ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2 py-3 rounded-full border border-red-500/40 bg-red-500/10 text-red-400 font-heading font-semibold text-sm">
+                      <Icon name="AlertCircle" size={18} />
+                      Ошибка отправки — проверьте настройки почты
+                    </div>
+                    <button type="submit" className="w-full text-white font-heading font-semibold py-3 rounded-full text-sm tracking-wide hover:opacity-90 transition-all" style={{ background: "linear-gradient(135deg, #f97316, #e11d48)" }}>
+                      Попробовать ещё раз
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={contactStatus === "sending"}
+                    className="w-full text-white font-heading font-semibold py-4 rounded-full text-base tracking-wide hover:opacity-90 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                    style={{ background: "linear-gradient(135deg, #f97316 0%, #e11d48 100%)", boxShadow: "0 8px 32px rgba(249,115,22,0.35)" }}
+                  >
+                    {contactStatus === "sending" ? (
+                      <>
+                        <Icon name="Loader" size={18} className="animate-spin" />
+                        Отправляем...
+                      </>
+                    ) : (
+                      "Отправить сообщение"
+                    )}
+                  </button>
+                )}
+              </form>
             </div>
           </div>
         </div>
